@@ -8,6 +8,7 @@ import ContributeToPatient from "@/components/forms/contribute-to-patients";
 import Hero from "@/components/sections/hero";
 import MiddleHero from "@/components/sections/middle-hero";
 import HealFundProvider from "@/context/heal-fund-provider";
+import TechStack from "@/components/techstack";
 
 const ScrollHandler = () => {
 	const searchParams = useSearchParams();
@@ -40,6 +41,7 @@ const HomePage = () => {
 			<Suspense fallback={null}>
 				<ScrollHandler />
 			</Suspense>
+			<TechStack />
 		</div>
 	);
 };
