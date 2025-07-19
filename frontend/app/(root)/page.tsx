@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import PriceDisplayCard from "@/components/eth/price-display-card";
 import Footer from "@/components/footer";
@@ -9,7 +9,7 @@ import Hero from "@/components/sections/hero";
 import MiddleHero from "@/components/sections/middle-hero";
 import HealFundProvider from "@/context/heal-fund-provider";
 
-const HomePage = () => {
+const ScrollHandler = () => {
 	const searchParams = useSearchParams();
 
 	useEffect(() => {
@@ -22,6 +22,10 @@ const HomePage = () => {
 		}
 	}, [searchParams]);
 
+	return null;
+};
+
+const HomePage = () => {
 	return (
 		<div>
 			<Hero />
@@ -33,6 +37,9 @@ const HomePage = () => {
 				</div>
 			</HealFundProvider>
 			<Footer />
+			<Suspense fallback={null}>
+				<ScrollHandler />
+			</Suspense>
 		</div>
 	);
 };
