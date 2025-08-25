@@ -94,6 +94,7 @@ export async function signInWithCredentials(
 	params: Pick<UserSignInCredentials, "email" | "password">
 ): Promise<
 	ActionResponse<{
+		role: "admin" | "user";
 		id: string;
 		email: string;
 		name: string;
