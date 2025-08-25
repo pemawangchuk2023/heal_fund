@@ -217,7 +217,10 @@ contract HealFund is ReentrancyGuard {
     ) public onlyAuthority whenNotStopped {
         HealFundProject storage p = patientAppeals[_patientId];
         require(!p.endorsed, "Already endorsed");
-        require(p.targetDeadline > block.timestamp, "Deadline passed");
+        require(
+            p.targetDeadline > block.timestamp,
+            "The deadline has already passed"
+        );
 
         p.endorsed = true;
         approvalTokenCounter++;

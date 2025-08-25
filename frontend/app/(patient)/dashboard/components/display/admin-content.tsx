@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
 	Table,
 	TableBody,
@@ -9,28 +9,35 @@ import {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from "@/components/ui/table"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Copy, MoreHorizontal, User, Check, X, CheckCircle } from "lucide-react"
-import Image from "next/image"
-import { toast } from "sonner"
-import { useHealFund } from "@/context/heal-fund-provider"
-import Link from "next/link"
+} from "@/components/ui/dropdown-menu";
+import {
+	Copy,
+	MoreHorizontal,
+	User,
+	Check,
+	X,
+	CheckCircle,
+} from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { useHealFund } from "@/context/heal-fund-provider";
+import Link from "next/link";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+	DialogDescription,
+} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const AdminContent = () => {
 	const {
@@ -39,294 +46,342 @@ const AdminContent = () => {
 		rejectFundSupportRequest,
 		fetchAppeals,
 		currentAccount,
-	} = useHealFund()
-	const [loading, setLoading] = useState(true)
-	const [hasFetched, setHasFetched] = useState(false)
-	const [selectedDescription, setSelectedDescription] = useState("")
-	const [isDescriptionDialogOpen, setIsDescriptionDialogOpen] = useState(false)
-	const router = useRouter()
+	} = useHealFund();
+	const [loading, setLoading] = useState(true);
+	const [hasFetched, setHasFetched] = useState(false);
+	const [selectedDescription, setSelectedDescription] = useState("");
+	const [isDescriptionDialogOpen, setIsDescriptionDialogOpen] = useState(false);
+	const [approving, setApproving] = useState<number | null>(null);
+	const router = useRouter();
 
 	useEffect(() => {
 		if (!hasFetched && currentAccount) {
 			const loadAppeals = async () => {
+				setLoading(true);
 				try {
-					console.log("Starting to fetch appeals...")
-					await fetchAppeals()
-					console.log("Finished fetching appeals")
-					setHasFetched(true)
-					setLoading(false)
+					console.log("Starting to fetch appeals...");
+					await fetchAppeals();
+					console.log("Finished fetching appeals");
+					setHasFetched(true);
 				} catch (error) {
-					console.error("Failed to load appeals:", error)
-					setLoading(false)
+					console.error("Failed to load appeals:", error);
+					toast.error("Failed to fetch appeals. Please try again.");
+				} finally {
+					setLoading(false);
 				}
-			}
-			loadAppeals()
+			};
+			loadAppeals();
 		}
-	}, [fetchAppeals, currentAccount, hasFetched])
+	}, [fetchAppeals, currentAccount, hasFetched]);
 
 	const copyAddress = async (address: string) => {
 		if (address) {
 			try {
-				await navigator.clipboard.writeText(address)
+				await navigator.clipboard.writeText(address);
 				toast.success("Copied!", {
 					description: "You Have Copied Successfully!",
-					icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+					icon: <CheckCircle className='h-5 w-5 text-green-500' />,
 					duration: 3000,
-				})
+				});
 			} catch {
-				toast.error("Failed to copy the wallet address. Try again")
+				toast.error("Failed to copy the wallet address. Try again.");
 			}
 		}
-	}
+	};
 
 	const handleDescriptionClick = (description: string) => {
-		setSelectedDescription(description)
-		setIsDescriptionDialogOpen(true)
-	}
+		setSelectedDescription(description);
+		setIsDescriptionDialogOpen(true);
+	};
 
 	const handleApprove = async (index: number) => {
+		setApproving(index);
 		try {
-			await approveHealthAppeal(index)
+			await approveHealthAppeal(index);
 			toast.success("Appeal Approved!", {
 				description: "The appeal has been successfully approved.",
 				duration: 3000,
-			})
-			await fetchAppeals()
+			});
+			await fetchAppeals();
 		} catch (error) {
-			toast.error("Failed to approve appeal. Try again.")
-			console.error("Error approving appeal:", error)
+			toast.error("Failed to approve appeal. Try again.");
+			console.error("Error approving appeal:", error);
+			await fetchAppeals();
+		} finally {
+			setApproving(null);
 		}
-	}
+	};
 
 	const handleReject = async (index: number) => {
 		try {
-			await rejectFundSupportRequest(index)
+			await rejectFundSupportRequest(index);
 			toast.success("Appeal Rejected!", {
 				description: "The appeal has been successfully rejected.",
 				duration: 3000,
-			})
-			router.push("/dashboard/appeal")
+			});
+			await fetchAppeals();
+			router.push("/dashboard/appeal");
 		} catch (error) {
-			toast.error("Failed to reject appeal. Try again.")
-			console.error("Error rejecting appeal:", error)
+			toast.error("Failed to reject appeal. Try again.");
+			console.error("Error rejecting appeal:", error);
 		}
-	}
+	};
 
-	// Filter out approved appeals
-	const pendingAppeals = appeals.filter((appeal) => !appeal.endorsed)
+	// Filter out endorsed, rejected, or completed appeals
+	const pendingAppeals = appeals
+		.map((appeal, originalIndex) => ({ ...appeal, originalIndex }))
+		.filter(
+			(appeal) => !appeal.endorsed && !appeal.rejected && !appeal.completed
+		);
 
 	if (loading) {
 		return (
-			<div className="flex min-h-screen w-full items-center justify-center bg-background">
-				<div className="text-center">
+			<div className='flex min-h-screen w-full items-center justify-center bg-background'>
+				<div className='text-center'>
 					<Image
-						src="/assets/loader.gif"
-						alt="loader"
+						src='/assets/loader.gif'
+						alt='loader'
 						width={300}
 						height={300}
-						className="mx-auto animate-spin"
-						unoptimized={true}
+						className='mx-auto animate-spin'
+						unoptimized
 						priority={true}
 					/>
-					<p className="mt-4 text-foreground">Fetching the latest appeals...</p>
+					<p className='mt-4 text-foreground'>Fetching the latest appeals...</p>
 				</div>
 			</div>
-		)
+		);
 	}
+
 	return (
-		<div className="flex w-full flex-col mb-2">
-			<div className="container mx-auto flex-1 space-y-6 p-4 md:p-8">
-				<h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-					Pending Health Appeals
-				</h1>
+		<div className='flex w-full flex-col mb-2'>
+			<div className='container mx-auto flex-1 space-y-6 p-4 md:p-8'>
+				<div className='flex justify-between items-center'>
+					<h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
+						Pending Health Appeals
+					</h1>
+					<Button
+						variant='outline'
+						onClick={async () => {
+							setLoading(true);
+							try {
+								await fetchAppeals();
+								toast.success("Appeals refreshed successfully.");
+							} catch {
+								toast.error("Failed to refresh appeals.");
+							} finally {
+								setLoading(false);
+							}
+						}}
+						disabled={loading}
+					>
+						{loading ? "Refreshing..." : "Refresh Appeals"}
+					</Button>
+				</div>
 				{pendingAppeals.length === 0 ? (
-					<Card className="flex flex-col items-center justify-center py-20 text-center shadow-sm">
-						<CardContent className="flex flex-col items-center justify-center p-0">
-							<User className="mx-auto mb-4 size-16 text-gray-400" />
-							<h3 className="mb-2 text-xl font-semibold text-foreground">
+					<Card className='flex flex-col items-center justify-center py-20 text-center shadow-sm'>
+						<CardContent className='flex flex-col items-center justify-center p-0'>
+							<User className='mx-auto mb-4 size-16 text-gray-400' />
+							<h3 className='mb-2 text-xl font-semibold text-foreground'>
 								No Pending Proposals Found
 							</h3>
-							<p className="text-muted-foreground">
+							<p className='text-muted-foreground'>
 								New proposals will appear here when submitted.
 							</p>
 						</CardContent>
 					</Card>
 				) : (
-					<Card className="overflow-hidden shadow-sm">
-						<CardHeader className="px-6 py-4">
-							<CardTitle className="text-lg font-semibold">
+					<Card className='overflow-hidden shadow-sm'>
+						<CardHeader className='px-6 py-4'>
+							<CardTitle className='text-lg font-semibold'>
 								Appeals Overview
 							</CardTitle>
 						</CardHeader>
-						<CardContent className="p-0">
-							<div className="overflow-x-auto">
+						<CardContent className='p-0'>
+							<div className='overflow-x-auto'>
 								<Table>
 									<TableHeader>
 										<TableRow>
-											<TableHead className="w-[50px]">
+											<TableHead className='w-[50px]'>
 												<Checkbox />
 											</TableHead>
-											<TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+											<TableHead className='text-xs uppercase tracking-wider text-muted-foreground'>
 												NAME
 											</TableHead>
-											<TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+											<TableHead className='text-xs uppercase tracking-wider text-muted-foreground'>
 												DESCRIPTION
 											</TableHead>
-											<TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+											<TableHead className='text-xs uppercase tracking-wider text-muted-foreground'>
 												PUBLIC KEY
 											</TableHead>
-											<TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+											<TableHead className='text-xs uppercase tracking-wider text-muted-foreground'>
 												AMOUNT
 											</TableHead>
-											<TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+											<TableHead className='text-xs uppercase tracking-wider text-muted-foreground'>
 												TARGET DATE
 											</TableHead>
-											<TableHead className="text-xs uppercase tracking-wider text-muted-foreground">
+											<TableHead className='text-xs uppercase tracking-wider text-muted-foreground'>
 												UPLOADED FILE
 											</TableHead>
-											<TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">
+											<TableHead className='text-right text-xs uppercase tracking-wider text-muted-foreground'>
 												ACTIONS
 											</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{pendingAppeals.map((appeal, index) => (
-											<TableRow
-												key={index}
-												className="hover:bg-muted/50 transition-colors"
-											>
-												<TableCell>
-													<Checkbox />
-												</TableCell>
-												<TableCell className="font-medium">
-													{appeal.purpose}
-												</TableCell>
-												<TableCell>
-													<Button
-														variant="destructive"
-														size="sm"
-														onClick={() =>
-															handleDescriptionClick(appeal.description)
-														}
-														className="border-2 border-green-500 rounded-2 cursor-pointer"
-													>
-														Read Application
-													</Button>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-2">
-														<span className="truncate max-w-[100px] md:max-w-[150px]">
-															{appeal.patient.substring(0, 8)}...
-															{appeal.patient.substring(
-																appeal.patient.length - 4
-															)}
-														</span>
+										{pendingAppeals.map((appeal) => {
+											console.log(
+												`Rendering TableRow for patientId: ${appeal.originalIndex}`
+											);
+											return (
+												<TableRow
+													key={appeal.originalIndex}
+													className='hover:bg-muted/50 transition-colors'
+												>
+													<TableCell>
+														<Checkbox />
+													</TableCell>
+													<TableCell className='font-medium'>
+														{appeal.purpose}
+													</TableCell>
+													<TableCell>
 														<Button
-															variant="ghost"
-															size="icon"
-															className="size-6 cursor-pointer"
-															onClick={() => copyAddress(appeal.patient)}
+															variant='destructive'
+															size='sm'
+															onClick={() =>
+																handleDescriptionClick(appeal.description)
+															}
+															className='border-2 border-green-500 rounded-2 cursor-pointer'
 														>
-															<Copy className="size-4" />
-															<span className="sr-only">Copy PK</span>
+															Read Application
 														</Button>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-1">
-														<Image
-															src="/assets/ethereum.png"
-															alt="ethereum"
-															width={16}
-															height={16}
-														/>
-														<span>{appeal.targetFigure}</span>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-1">
-														<Image
-															src="/assets/calendar.svg"
-															alt="calendar"
-															width={16}
-															height={16}
-														/>
-														<span>
-															{new Date(
-																appeal.targetDeadline
-															).toLocaleDateString("en-US", {
-																year: "numeric",
-																month: "short",
-																day: "numeric",
-															})}
-														</span>
-													</div>
-												</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-2">
-														{appeal.ipfsHash ? (
-															<>
-																<Link
-																	href={`https://ipfs.io/ipfs/${appeal.ipfsHash}`}
-																	target="_blank"
-																	rel="noopener noreferrer"
-																	className="truncate text-blue-600 hover:underline max-w-[100px] md:max-w-[150px]"
-																	title={appeal.ipfsHash}
-																>
-																	{appeal.ipfsHash.substring(0, 8)}...
-																	{appeal.ipfsHash.substring(
-																		appeal.ipfsHash.length - 4
-																	)}
-																</Link>
-																<Button
-																	variant="ghost"
-																	size="icon"
-																	className="size-6 cursor-pointer"
-																	onClick={() => copyAddress(appeal.ipfsHash)}
-																>
-																	<Copy className="size-4" />
-																	<span className="sr-only">
-																		Copy IPFS Hash
-																	</span>
-																</Button>
-															</>
-														) : (
-															<span className="text-gray-500">
-																No file uploaded
+													</TableCell>
+													<TableCell>
+														<div className='flex items-center gap-2'>
+															<span className='truncate max-w-[100px] md:max-w-[150px]'>
+																{appeal.patient.substring(0, 8)}...
+																{appeal.patient.substring(
+																	appeal.patient.length - 4
+																)}
 															</span>
-														)}
-													</div>
-												</TableCell>
-												<TableCell className="text-right">
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
 															<Button
-																variant="ghost"
-																size="icon"
-																className="size-8"
+																variant='ghost'
+																size='icon'
+																className='size-6 cursor-pointer'
+																onClick={() => copyAddress(appeal.patient)}
 															>
-																<MoreHorizontal className="size-4" />
-																<span className="sr-only">Actions</span>
+																<Copy className='size-4' />
+																<span className='sr-only'>Copy PK</span>
 															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															<DropdownMenuItem
-																onClick={() => handleApprove(index)}
-																className="flex items-center gap-2 text-green-600 cursor-pointer"
-															>
-																<Check className="size-4" /> Approve
-															</DropdownMenuItem>
-															<DropdownMenuItem
-																onClick={() => handleReject(index)}
-																className="flex items-center gap-2 text-red-600 cursor-pointer"
-															>
-																<X className="size-4" /> Reject
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</TableCell>
-											</TableRow>
-										))}
+														</div>
+													</TableCell>
+													<TableCell>
+														<div className='flex items-center gap-1'>
+															<Image
+																src='/assets/ethereum.png'
+																alt='ethereum'
+																width={16}
+																height={16}
+															/>
+															<span>{appeal.targetFigure}</span>
+														</div>
+													</TableCell>
+													<TableCell>
+														<div className='flex items-center gap-1'>
+															<Image
+																src='/assets/calendar.svg'
+																alt='calendar'
+																width={16}
+																height={16}
+															/>
+															<span>
+																{new Date(
+																	appeal.targetDeadline
+																).toLocaleDateString("en-US", {
+																	year: "numeric",
+																	month: "short",
+																	day: "numeric",
+																})}
+															</span>
+														</div>
+													</TableCell>
+													<TableCell>
+														<div className='flex items-center gap-2'>
+															{appeal.ipfsHash ? (
+																<>
+																	<Link
+																		href={`https://ipfs.io/ipfs/${appeal.ipfsHash}`}
+																		target='_blank'
+																		rel='noopener noreferrer'
+																		className='truncate text-blue-600 hover:underline max-w-[100px] md:max-w-[150px]'
+																		title={appeal.ipfsHash}
+																	>
+																		{appeal.ipfsHash.substring(0, 8)}...
+																		{appeal.ipfsHash.substring(
+																			appeal.ipfsHash.length - 4
+																		)}
+																	</Link>
+																	<Button
+																		variant='ghost'
+																		size='icon'
+																		className='size-6 cursor-pointer'
+																		onClick={() => copyAddress(appeal.ipfsHash)}
+																	>
+																		<Copy className='size-4' />
+																		<span className='sr-only'>
+																			Copy IPFS Hash
+																		</span>
+																	</Button>
+																</>
+															) : (
+																<span className='text-gray-500'>
+																	No file uploaded
+																</span>
+															)}
+														</div>
+													</TableCell>
+													<TableCell className='text-right'>
+														<DropdownMenu>
+															<DropdownMenuTrigger asChild>
+																<Button
+																	variant='ghost'
+																	size='icon'
+																	className='size-8'
+																>
+																	<MoreHorizontal className='size-4' />
+																	<span className='sr-only'>Actions</span>
+																</Button>
+															</DropdownMenuTrigger>
+															<DropdownMenuContent align='end'>
+																<DropdownMenuItem
+																	onClick={() =>
+																		handleApprove(appeal.originalIndex)
+																	}
+																	className='flex items-center gap-2 text-green-600 cursor-pointer'
+																	disabled={approving === appeal.originalIndex}
+																>
+																	{approving === appeal.originalIndex ? (
+																		<span>Loading...</span>
+																	) : (
+																		<>
+																			<Check className='size-4' /> Approve
+																		</>
+																	)}
+																</DropdownMenuItem>
+																<DropdownMenuItem
+																	onClick={() =>
+																		handleReject(appeal.originalIndex)
+																	}
+																	className='flex items-center gap-2 text-red-600 cursor-pointer'
+																>
+																	<X className='size-4' /> Reject
+																</DropdownMenuItem>
+															</DropdownMenuContent>
+														</DropdownMenu>
+													</TableCell>
+												</TableRow>
+											);
+										})}
 									</TableBody>
 								</Table>
 							</div>
@@ -334,25 +389,24 @@ const AdminContent = () => {
 					</Card>
 				)}
 			</div>
-			{/* Description Dialog */}
 			<Dialog
 				open={isDescriptionDialogOpen}
 				onOpenChange={setIsDescriptionDialogOpen}
 			>
-				<DialogContent className="w-full sm:max-w-lg md:max-w-2xl">
+				<DialogContent className='w-full sm:max-w-lg md:max-w-2xl'>
 					<DialogHeader>
 						<DialogTitle>Appeal Description</DialogTitle>
 						<DialogDescription>
 							Full details of the health appeal.
 						</DialogDescription>
 					</DialogHeader>
-					<div className="prose prose-sm max-h-[300px] w-full overflow-y-auto">
+					<div className='prose prose-sm max-h-[300px] w-full overflow-y-auto'>
 						<p>{selectedDescription}</p>
 					</div>
 				</DialogContent>
 			</Dialog>
 		</div>
-	)
-}
+	);
+};
 
-export default AdminContent
+export default AdminContent;

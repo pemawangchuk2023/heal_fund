@@ -78,6 +78,7 @@ export interface PatientAppeal {
 	targetDeadline: Date;
 	amountRaised: number;
 	endorsed: boolean;
+	rejected: boolean;
 	completed: boolean;
 	approvalTokenId: string;
 	amountPaidOut: string;

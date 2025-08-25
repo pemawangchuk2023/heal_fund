@@ -18,7 +18,6 @@ const ApprovedAppeals = () => {
 	const [approvedAppeals, setApprovedAppeals] = useState<PatientAppeal[]>([]);
 
 	useEffect(() => {
-		// Filter appeals that are endorsed
 		const filteredAppeals = appeals.filter((appeal) => appeal.endorsed);
 		setApprovedAppeals(filteredAppeals);
 	}, [appeals]);

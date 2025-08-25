@@ -120,13 +120,18 @@ const HealFundProvider = ({ children }: HealFundProviderProps) => {
 	};
 
 	const approveHealthAppeal = async (patientId: number) => {
+		console.log("Calling endorseHealthAppeal with ID:", patientId);
 		if (!contract || !currentAccount) {
 			throw new Error("Contract or wallet not initialized.");
 		}
 		try {
-			const tx = await contract.endorseHealthAppeal(patientId, {
-				gasLimit: 500_000,
-			});
+			const totalAppeals = await contract.patientAppealCount();
+			if (patientId >= Number(totalAppeals)) {
+				throw new Error(
+					`Invalid patient ID: ${patientId}. Total appeals: ${totalAppeals}`
+				);
+			}
+			const tx = await contract.endorseHealthAppeal(patientId);
 			await tx.wait();
 			console.log("Health appeal endorsed successfully.");
 		} catch (error) {
@@ -174,6 +179,7 @@ const HealFundProvider = ({ children }: HealFundProviderProps) => {
 	const fetchAppeals = useCallback(async () => {
 		if (!contract) {
 			console.error("Contract not initialized");
+			toast.error("Contract not initialized. Please reconnect MetaMask.");
 			return;
 		}
 		try {
@@ -193,6 +199,7 @@ const HealFundProvider = ({ children }: HealFundProviderProps) => {
 					targetDeadline,
 					amountRaised,
 					endorsed,
+					rejected,
 					completed,
 					approvalTokenId,
 					amountPaidOut,
@@ -201,7 +208,7 @@ const HealFundProvider = ({ children }: HealFundProviderProps) => {
 					contributionsBlocked,
 				] = details;
 
-				results.push({
+				const appeal = {
 					patient,
 					purpose,
 					description,
@@ -209,19 +216,32 @@ const HealFundProvider = ({ children }: HealFundProviderProps) => {
 					targetFigure: Number(ethers.formatEther(targetFigure)),
 					targetDeadline: new Date(Number(targetDeadline) * 1000),
 					amountRaised: Number(ethers.formatEther(amountRaised)),
-					endorsed,
-					completed,
+					endorsed: Boolean(endorsed),
+					rejected: Boolean(rejected),
+					completed: Boolean(completed),
 					approvalTokenId: approvalTokenId.toString(),
 					amountPaidOut: ethers.formatEther(amountPaidOut),
 					contributorCount: Number(contributorCount),
-					targetAchieved,
-					contributionsBlocked,
+					targetAchieved: Boolean(targetAchieved),
+					contributionsBlocked: Boolean(contributionsBlocked),
 					contributors,
-				});
+				};
+				results.push(appeal);
 			}
+			console.log(
+				"Fetched appeals:",
+				results.map((appeal) => ({
+					patientId: results.indexOf(appeal),
+					endorsed: appeal.endorsed,
+					purpose: appeal.purpose,
+					rejected: appeal.rejected,
+					completed: appeal.completed,
+				}))
+			);
 			setAppeals(results);
 		} catch (err) {
 			console.error("Failed to fetch appeals:", err);
+			toast.error("Failed to fetch appeals. Please try again.");
 		}
 	}, [contract]);
 

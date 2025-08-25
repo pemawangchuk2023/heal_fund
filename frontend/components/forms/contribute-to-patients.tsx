@@ -31,7 +31,6 @@ const ContributeToPatient = () => {
 	const { appeals, fetchAppeals, contributeToPatient } = useHealFund();
 	const [amounts, setAmounts] = useState<{ [key: number]: string }>({});
 	const [loadingIds, setLoadingIds] = useState<number[]>([]);
-	const [isContributing, setIsContributing] = useState(false);
 
 	useEffect(() => {
 		fetchAppeals();
@@ -49,17 +48,17 @@ const ContributeToPatient = () => {
 		}
 		try {
 			setLoadingIds((prev) => [...prev, patientId]);
-			setIsContributing(true);
 			await contributeToPatient(patientId, Number.parseFloat(amount));
 			toast.success("The contribution was successful!");
 			setAmounts((prev) => ({ ...prev, [patientId]: "" }));
 		} catch (error) {
 			console.error("Contribution failed:", error);
-			toast.error("Transaction failed. Try again.");
+			toast.error("Transaction failed. Check the deadline. Try again.");
 		} finally {
 			setLoadingIds((prev) => prev.filter((id) => id !== patientId));
 		}
 	};
+
 	if (endorsedAppeals.length === 0) {
 		return (
 			<div className='container py-6'>
@@ -70,10 +69,11 @@ const ContributeToPatient = () => {
 			</div>
 		);
 	}
+
 	return (
 		<div className='w-full space-y-6 text-center items-center justify-center'>
 			<MetamaskAlert />
-			<h1 className='text-xl font-semibold  inline-block border-b-8 border-yellow-500'>
+			<h1 className='text-xl font-semibold inline-block border-b-8 border-yellow-500'>
 				Support Endorsed Appeals
 			</h1>
 			<div className='rounded-md border overflow-x-auto'>
@@ -169,23 +169,19 @@ const ContributeToPatient = () => {
 												size='sm'
 												className='h-8 px-2 cursor-pointer'
 												onClick={() => handleContribution(patientId)}
-												disabled={
-													loadingIds.includes(patientId) || isContributing
-												}
+												disabled={loadingIds.includes(patientId)}
 											>
-												{isContributing ? (
-													<>
-														<div className='flex items-center justify-center gap-2'>
-															<Image
-																src='/assets/loader.gif'
-																alt='Loading...'
-																width={24}
-																height={24}
-																className='h-6 w-6'
-															/>
-															<span>Processing Contribution...</span>
-														</div>
-													</>
+												{loadingIds.includes(patientId) ? (
+													<div className='flex items-center justify-center gap-2'>
+														<Image
+															src='/assets/loader.gif'
+															alt='Loading...'
+															width={24}
+															height={24}
+															className='h-6 w-6'
+														/>
+														<span>Processing Contribution...</span>
+													</div>
 												) : (
 													<>Contribute</>
 												)}

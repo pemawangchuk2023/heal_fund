@@ -21,6 +21,7 @@ import {
 	signInWithCredentials,
 	signUpWithCredentials,
 } from "@/lib/actions/user.action";
+import { signIn } from "next-auth/react";
 
 // Define types for both forms
 type SignUpFormValues = z.infer<typeof SignUpSchema>;
@@ -56,7 +57,6 @@ const UserAuthForm = ({ type }: UserAuthFormProps) => {
 					password: "",
 			  },
 	});
-
 	const onSubmit = async (values: UserAuthFormValues) => {
 		setIsLoading(true);
 
@@ -65,11 +65,28 @@ const UserAuthForm = ({ type }: UserAuthFormProps) => {
 				const user = await signUpWithCredentials({
 					params: values as SignUpFormValues,
 				});
-				console.log("user registered:", user);
+				if (!user) {
+					return null;
+				}
 				router.push("/sign-in");
 			} else {
-				const user = await signInWithCredentials(values as SignInFormValues);
-				console.log("The user signed in:", user);
+				// First, verify credentials via your server action
+				const result = await signInWithCredentials(values as SignInFormValues);
+				if (!result.success) {
+					throw new Error("Invalid email or password");
+				}
+
+				// Then, start session using Auth.js
+				const res = await signIn("credentials", {
+					email: values.email,
+					password: values.password,
+					redirect: false,
+				});
+
+				if (res?.error) {
+					throw new Error(res.error);
+				}
+
 				router.push("/dashboard");
 			}
 		} catch (error) {
@@ -83,7 +100,6 @@ const UserAuthForm = ({ type }: UserAuthFormProps) => {
 			setIsLoading(false);
 		}
 	};
-
 	return (
 		<div className='w-full'>
 			{/* Subtle Background Elements */}

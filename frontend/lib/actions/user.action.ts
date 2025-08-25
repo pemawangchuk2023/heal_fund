@@ -94,6 +94,7 @@ export async function signInWithCredentials(
 	params: Pick<UserSignInCredentials, "email" | "password">
 ): Promise<
 	ActionResponse<{
+		id: string;
 		email: string;
 		name: string;
 	}>
@@ -110,6 +111,7 @@ export async function signInWithCredentials(
 		await connectToDatabase();
 
 		const user = await User.findOne({ email });
+		console.log("The signed user is", { user });
 		if (!user) {
 			return handleError(new Error("User not found"));
 		}
@@ -120,6 +122,7 @@ export async function signInWithCredentials(
 		return {
 			success: true,
 			data: {
+				id: user._id.toString(),
 				email: user.email,
 				name: user.name,
 			},
@@ -131,7 +134,10 @@ export async function signInWithCredentials(
 export async function getCurrentUser(
 	params: GetUserParams
 ): Promise<ActionResponse<{ user: IUser }>> {
+	console.log("getCurrentUser called with params:", params);
+
 	const validationResult = await action({ params, schema: GetUserSchema });
+
 	if (validationResult instanceof Error) {
 		return handleError(validationResult) as ErrorResponse;
 	}

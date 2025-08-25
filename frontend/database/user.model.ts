@@ -10,6 +10,7 @@ export interface IUser {
 	publicKey: string;
 	location: string;
 	contactNumber: number;
+	role: "admin" | "user";
 }
 
 export interface IUserDocument extends IUser, Document {}
@@ -25,6 +26,12 @@ const UserSchema = new Schema<IUser>(
 		publicKey: { type: String, required: true },
 		location: { type: String, required: true },
 		contactNumber: { type: Number, required: true },
+		role: {
+			type: String,
+			enum: ["user", "admin"],
+			default: "user",
+			required: true,
+		},
 	},
 	{
 		timestamps: true,
