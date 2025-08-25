@@ -126,6 +126,7 @@ export async function signInWithCredentials(
 				id: user._id.toString(),
 				email: user.email,
 				name: user.name,
+				role: "admin",
 			},
 		};
 	} catch (error) {
